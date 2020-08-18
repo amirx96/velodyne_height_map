@@ -7,7 +7,7 @@ set(${PROJECT_NAME}_CATKIN_DEPS
     pcl_ros
     sensor_msgs
     tf)
-
+set(CMAKE_CXX_STANDARD 11)
 find_package(catkin REQUIRED COMPONENTS
              ${${PROJECT_NAME}_CATKIN_DEPS}
              angles
@@ -24,7 +24,12 @@ include_directories(include
 catkin_package(CATKIN_DEPENDS ${${PROJECT_NAME}_CATKIN_DEPS})
 
 add_executable(heightmap_node src/heightmap_node.cpp src/heightmap.cpp)
+add_executable(heightmap_costmap_node src/heightmap_to_costmap.cpp)
 target_link_libraries(heightmap_node
+                      ${catkin_LIBRARIES}
+                      ${Boost_LIBRARIES}
+                      ${PCL_LIBRARIES})
+target_link_libraries(heightmap_costmap_node
                       ${catkin_LIBRARIES}
                       ${Boost_LIBRARIES}
                       ${PCL_LIBRARIES})

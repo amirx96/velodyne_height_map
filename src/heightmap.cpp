@@ -56,7 +56,7 @@ HeightMap::HeightMap(ros::NodeHandle node, ros::NodeHandle priv_nh)
   clear_publisher_ = node.advertise<VPointCloud>("velodyne_clear",1);  
 
   // subscribe to Velodyne data points
-  velodyne_scan_ = node.subscribe("velodyne_points", 10,
+  velodyne_scan_ = node.subscribe("/carla/ego_vehicle/lidar/lidar01/point_cloud", 10,
                                   &HeightMap::processData, this,
                                   ros::TransportHints().tcpNoDelay(true));
 }
