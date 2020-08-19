@@ -1,3 +1,9 @@
+/*  Copyright (C) Amir Darwesh
+ * 
+ *  License: Modified BSD Software License 
+ */
+
+
 #include <string>
 #include <ros/ros.h>
 #include <pcl_ros/point_cloud.h>
