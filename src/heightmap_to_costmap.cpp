@@ -9,7 +9,6 @@
 #include <nav_msgs/MapMetaData.h>
 #include <geometry_msgs/Pose.h>
 
-
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
 
 class HeightmapToCostMap
@@ -40,22 +39,22 @@ HeightmapToCostMap::HeightmapToCostMap() : cloud_topic_("/velodyne_obstacles"), 
 void HeightmapToCostMap::cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_msg)
 {
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz_(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_xyz_(new pcl::PointCloud<pcl::PointXYZI>);
     pcl::fromROSMsg(*cloud_msg, *cloud_xyz_); // conver to pcl object
 
     // get bounds
     Eigen::Vector4f min_pt;
     Eigen::Vector4f max_pt;
     pcl::getMinMax3D(*cloud_xyz_, min_pt, max_pt);
-    ROS_INFO_THROTTLE(5,"Bounds x[%f, %f]. y[%f, %f], z[%f, %f]", min_pt[0], max_pt[0], min_pt[1], max_pt[1], min_pt[2], max_pt[2]);
+    //ROS_INFO_THROTTLE(0.5, "Bounds x[%f, %f]. y[%f, %f], z[%f, %f]", min_pt[0], max_pt[0], min_pt[1], max_pt[1], min_pt[2], max_pt[2]);
 
-    int width_ = int (max_pt[0] - min_pt[0] + 0.5f);
-    width_ = int ( width_/RESOLUTION_ + 0.5f);
+    int width_ = int(max_pt[0] - min_pt[0] + 0.5f);
+    width_ = int(width_ / RESOLUTION_ + 0.5f);
 
-    int height_ = int (max_pt[1] - min_pt[1] + 0.5f);
-    height_ = int ( height_/RESOLUTION_ + 0.5f);
+    int height_ = int(max_pt[1] - min_pt[1] + 0.5f);
+    height_ = int(height_ / RESOLUTION_ + 0.5f);
 
-    ROS_INFO_THROTTLE(5,"Image Dimensions w %d x h %d",width_,height_);
+    //ROS_INFO_THROTTLE(0.5, "Image Dimensions w %d x h %d", width_, height_);
 
     nav_msgs::MapMetaData mapMeta;
 
@@ -64,25 +63,29 @@ void HeightmapToCostMap::cloud_cb(const sensor_msgs::PointCloud2ConstPtr &cloud_
     mapMeta.height = height_;
 
     geometry_msgs::Pose oPose;
-    oPose.position.x = -RESOLUTION_ * width_/2 ;
-    oPose.position.y = -RESOLUTION_ * height_/2;
+    oPose.position.x = min_pt[0] - RESOLUTION_/2;
+    oPose.position.y = min_pt[1] - RESOLUTION_/2;
     mapMeta.origin = oPose;
-
 
     nav_msgs::OccupancyGrid oMap;
     oMap.info = mapMeta;
-    oMap.data.resize(width_*height_);
+    oMap.data.resize(width_ * height_);
     oMap.header.frame_id = cloud_xyz_->header.frame_id;
 
-
-    for (pcl::PointCloud<pcl::PointXYZ>::iterator it = cloud_xyz_->begin(); it != cloud_xyz_->end(); it++)
+    for (pcl::PointCloud<pcl::PointXYZI>::iterator it = cloud_xyz_->begin(); it != cloud_xyz_->end(); it++)
     {
-        int x = int( (it->x/RESOLUTION_) + 0.5f + width_/2 );
-        int y = int( (it->y/RESOLUTION_) + 0.5f + height_/2);
-        if( x <= width_ && y <=height_) {
-            oMap.data[MAP_IDX(width_,x,y)] = 100;
+        // check for nan points
+        if (!(isnan(it->x) | isnan(it->y)))
+        {
+
+            int x = int ((it->x / RESOLUTION_) - (min_pt[0] / RESOLUTION_));
+            int y = int ((it->y / RESOLUTION_) - (min_pt[1] / RESOLUTION_));
+            //ROS_INFO("X %d, Y %d, x %f ,y %f", x, y, it->x, it->y);
+            if (x < width_ && y < height_)
+            {
+                oMap.data[MAP_IDX(width_, x, y)] = 100;
+            }
         }
-        
     }
     cost_map_pub_.publish(oMap);
     return;
